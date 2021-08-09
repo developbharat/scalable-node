@@ -44,7 +44,7 @@ AuthEmitter.on(SignupEvents.Success, async (user) => {
   logger.info("Account created successful by:", user);
 });
 
-AuthEmitter.on(SignupEvents.DuplicateEmail, (user) => {
+AuthEmitter.on(SignupEvents.DuplicateEmail, async (user) => {
   // User is trying to create new account with existing email,
   // Send him a email to support him with password reset instructions
   // or asking him to signin.

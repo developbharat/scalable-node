@@ -12,8 +12,11 @@ export class AuthTokenEntity {
   @Column()
   code: string;
 
-  @Column()
-  expirationTime: number;
+  @Column({
+    type: "text",
+    transformer: { to: (value: string) => `${new Date(value).getTime()}`, from: (value) => new Date(value) }
+  })
+  expirationTime: Date;
 
   @Column({ type: "enum", enum: TokenPurpose, default: TokenPurpose.signup_account_activation })
   purpose?: TokenPurpose;

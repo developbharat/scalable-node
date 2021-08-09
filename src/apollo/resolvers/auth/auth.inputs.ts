@@ -44,3 +44,15 @@ export class ResetPasswordInput {
   @Field()
   newPassword: string;
 }
+
+@InputType()
+export class RequestPasswordResetEmailInput {
+  @Field()
+  email: string;
+}
+
+@InputType()
+export class RequestAccountActivationEmailInput {
+  @Field()
+  email: string;
+}

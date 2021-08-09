@@ -89,7 +89,7 @@ export const activate_user_account = async (options: ActivateAccountOptions): Pr
     throw new AuthError(AuthStatusCodes.InvalidCredentials, "Token expired.");
   }
 
-  const isExpired = !token?.expirationTime || new Date().getTime() > token.expirationTime;
+  const isExpired = !token?.expirationTime || new Date().getTime() > token.expirationTime.getTime();
   if (isExpired) {
     AuthEmitter.emit(AccountActivationEvents.InvalidToken, User.fromEntity(user));
     throw new AuthError(AuthStatusCodes.InvalidCredentials, "Token expired.");
@@ -127,7 +127,7 @@ export const reset_user_password = async (options: ResetPasswordOptions): Promis
     throw new AuthError(AuthStatusCodes.InvalidCredentials, "Token expired.");
   }
 
-  const isExpired = !token?.expirationTime || new Date().getTime() > token.expirationTime;
+  const isExpired = !token?.expirationTime || new Date().getTime() > token.expirationTime.getTime();
   if (isExpired) {
     AuthEmitter.emit(ResetPasswordEvents.InvalidToken, User.fromEntity(user));
     throw new AuthError(AuthStatusCodes.InvalidCredentials, "Token expired.");

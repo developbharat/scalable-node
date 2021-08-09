@@ -1,7 +1,18 @@
 import { Arg, Ctx, Mutation, Query, Resolver } from "type-graphql";
 import { User } from "../../../models/User";
 import * as authService from "../../../services/auth/auth.service";
-import { ActivateUserAccountInput, ResetPasswordInput, SigninInput, SignupInput } from "./auth.inputs";
+import * as mailerService from "../../../services/emails/auth.emails.service";
+import {
+  ActivateUserAccountInput,
+  RequestAccountActivationEmailInput,
+  RequestPasswordResetEmailInput,
+  ResetPasswordInput,
+  SigninInput,
+  SignupInput
+} from "./auth.inputs";
+
+// TODO: Ability to request to send account activation email.
+// TODO: Ability to request to send password reset email.
 
 @Resolver()
 export class AuthResolver {
@@ -45,5 +56,15 @@ export class AuthResolver {
         return resolve();
       });
     });
+  }
+
+  @Mutation(() => Boolean, { nullable: true })
+  async requestAccountActivationEmail(@Arg("options") options: RequestAccountActivationEmailInput): Promise<void> {
+    await mailerService.send_account_activation_email(options.email);
+  }
+
+  @Mutation(() => Boolean, { nullable: true })
+  async requestPasswordResetEmail(@Arg("options") options: RequestPasswordResetEmailInput): Promise<void> {
+    await mailerService.send_password_reset_email(options.email);
   }
 }
