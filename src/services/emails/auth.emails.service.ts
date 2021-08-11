@@ -75,7 +75,7 @@ export const send_account_activation_email = async (email: string): Promise<void
   // Check if account activation code is already requested.
   const existingToken = await SQLDatabase.conn
     .getRepository(AuthTokenEntity)
-    .findOne({ email, purpose: TokenPurpose.signup_account_activation });
+    .findOne({ email, purpose: TokenPurpose.account_activation });
   if (!!existingToken) {
     const minutes = (new Date().getTime() - existingToken.updatedAt!.getTime()) / 1000 / 60;
     const isSpamming = minutes <= 5;
@@ -88,7 +88,7 @@ export const send_account_activation_email = async (email: string): Promise<void
       // Delete existing token to generate a new one.
       await SQLDatabase.conn
         .getRepository(AuthTokenEntity)
-        .delete({ email: email, purpose: TokenPurpose.signup_account_activation });
+        .delete({ email: email, purpose: TokenPurpose.account_activation });
     }
   }
 
@@ -100,7 +100,7 @@ export const send_account_activation_email = async (email: string): Promise<void
   expiration.setMinutes(expiration.getMinutes() + 30);
   await SQLDatabase.conn
     .getRepository(AuthTokenEntity)
-    .save({ email, code: code, purpose: TokenPurpose.signup_account_activation, expirationTime: expiration });
+    .save({ email, code: code, purpose: TokenPurpose.account_activation, expirationTime: expiration });
 
   // Send email
   await send_email({

@@ -18,7 +18,7 @@ export class AuthTokenEntity {
   })
   expirationTime: Date;
 
-  @Column({ type: "enum", enum: TokenPurpose, default: TokenPurpose.signup_account_activation })
+  @Column({ type: "enum", enum: TokenPurpose, default: TokenPurpose.account_activation })
   purpose?: TokenPurpose;
 
   @CreateDateColumn()

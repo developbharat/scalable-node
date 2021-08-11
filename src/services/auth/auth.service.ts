@@ -82,7 +82,7 @@ export const activate_user_account = async (options: ActivateAccountOptions): Pr
 
   const token = await SQLDatabase.conn.getRepository(AuthTokenEntity).findOne({
     email,
-    purpose: TokenPurpose.signup_account_activation
+    purpose: TokenPurpose.account_activation
   });
   if (!token) {
     AuthEmitter.emit(AccountActivationEvents.TokenNotRequested, User.fromEntity(user));
