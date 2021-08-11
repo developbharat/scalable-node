@@ -4,12 +4,8 @@ import { config } from "../config";
 import { __PROD__ } from "../constants";
 
 // TODO: Enable db caching using redis.
-// TODO: Fixed configuration for testing environment.
-// TODO: check if mysql migrations can be applied to sqlite
-// if so, then use inmemory sqlite db while testing.
-// TODO: add migration generation script in package.json
-// TODO: Create seperate configuration for test.
 export default {
+  name: "default",
   type: "mariadb",
   url: config.db.url,
   synchronize: !__PROD__,
