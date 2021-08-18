@@ -1,4 +1,5 @@
 import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import { AccountStatus } from "./AccountStatus";
 import { UserRole } from "./UserRole";
 
 @Entity("users")
@@ -18,8 +19,8 @@ export class UserEntity {
   @Column({ type: "text" })
   password: string;
 
-  @Column({ default: false })
-  isEmailVerified?: boolean;
+  @Column({ type: "enum", enum: AccountStatus, default: AccountStatus.inactive })
+  accountStatus: AccountStatus;
 
   @Column({ type: "enum", enum: UserRole, default: UserRole.client })
   role?: UserRole;

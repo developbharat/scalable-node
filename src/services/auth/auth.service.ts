@@ -1,12 +1,14 @@
 import argon2 from "argon2";
 import { AuthError, AuthStatusCodes } from "../../core/errors/CustomError";
 import { SQLDatabase } from "../../db/SQLDatabase";
+import { AccountStatus } from "../../entities/auth/AccountStatus";
 import { AuthTokenEntity } from "../../entities/auth/AuthTokenEntity";
 import { TokenPurpose } from "../../entities/auth/TokenPurpose";
 import { UserEntity } from "../../entities/auth/UserEntity";
 import {
   AccountActivationEvents,
   AuthEmitter,
+  CommonAuthEvents,
   ResetPasswordEvents,
   SigninEvents,
   SignupEvents
@@ -24,11 +26,19 @@ export const signin = async (options: SigninOptions): Promise<User> => {
   const user = await SQLDatabase.conn.getRepository(UserEntity).findOne({ email: email });
   if (!!!user) throw new AuthError(AuthStatusCodes.InvalidCredentials, "Account with provided email doesn't exist.");
 
-  if (!user.isEmailVerified) {
-    AuthEmitter.emit(SigninEvents.UnverifiedEmail, User.fromEntity(user));
+  if (user.accountStatus === AccountStatus.inactive) {
+    AuthEmitter.emit(CommonAuthEvents.InActiveAccount, User.fromEntity(user));
     throw new AuthError(
       AuthStatusCodes.UnAuthorized,
       "Your email address has not been verified, please verify your email to signin."
+    );
+  }
+
+  if (user.accountStatus === AccountStatus.blocked) {
+    AuthEmitter.emit(CommonAuthEvents.AccountBlocked, User.fromEntity(user));
+    throw new AuthError(
+      AuthStatusCodes.UnAuthorized,
+      "Your account has been blocked, please contact us to activate or report any issue."
     );
   }
 
@@ -147,96 +157,3 @@ export const reset_user_password = async (options: ResetPasswordOptions): Promis
 
   return User.fromEntity(user);
 };
-
-// TODO: implement below methods for sending account activation and password reset emails.
-
-/* 
-export const send_email_confirmation_code = async (email: string): Promise<User> => {
-  if (!AuthValidators.isEmailValid(email)) throw new Error(AuthValidators.error);
-
-  const user = await SQLDatabase.userRepo.findOne({ email });
-  if (!user) throw new Error("User with provided email doesn't exist.");
-
-  if (user.isEmailVerified) {
-    AuthEmitter.emit("SEND_EMAIL_CONFIRMATION_CODE_FAILURE__ALREADY_VERIFIED", User.fromEntity(user));
-    throw new Error("User account with provided email is already verified.");
-  }
-
-  // Generate activation code
-  const code = crypto.randomBytes(4).toString("hex");
-
-  // Generate expiration time : current time + 30 minutes
-  let expiration = new Date();
-  expiration.setMinutes(expiration.getMinutes() + 30);
-
-  // Check if user has already generated a password reset code.
-  const existingCode = await SQLDatabase.verifyTokenRepo.findOne({ email, isEmailConfirmation: true });
-  if (!!existingCode) {
-    await SQLDatabase.verifyTokenRepo.update(
-      {
-        email
-      },
-      {
-        code: code,
-        expirationTime: `${expiration.getTime()}`
-      }
-    );
-  } else {
-    await SQLDatabase.verifyTokenRepo.save({
-      email,
-      isEmailConfirmation: true,
-      code: code,
-      expirationTime: `${expiration.getTime()}`
-    });
-  }
-  // Send email
-  const htmlEmailContent = await prepare_account_activation_email(User.fromEntity(user), code);
-  await mailer.send_email({ to: user.email, subject: "Welcome to Torlases", html: htmlEmailContent });
-
-  AuthEmitter.emit("SEND_EMAIL_CONFIRMATION_CODE_SUCCESS", User.fromEntity(user));
-  return User.fromEntity(user);
-};
-
-export const send_reset_password_code = async (email: string): Promise<User> => {
-  if (!AuthValidators.isEmailValid(email)) throw new Error(AuthValidators.error);
-
-  const user = await SQLDatabase.userRepo.findOne({ email });
-  if (!user) throw new Error("User with provided email doesn't exist.");
-
-  // Generate activation code
-  const code = crypto.randomBytes(4).toString("hex");
-
-  // Generate expiration time : current time + 30 minutes
-  let expiration = new Date();
-  expiration.setMinutes(expiration.getMinutes() + 30);
-
-  // Check if user has already generated a password reset code.
-  const existingCode = await SQLDatabase.verifyTokenRepo.findOne({ email, isResetPassword: true });
-  if (!!existingCode) {
-    await SQLDatabase.verifyTokenRepo.update(
-      {
-        email
-      },
-      {
-        code: code,
-        expirationTime: `${expiration.getTime()}`
-      }
-    );
-  } else {
-    await SQLDatabase.verifyTokenRepo.save({
-      email,
-      isResetPassword: true,
-      code: code,
-      expirationTime: `${expiration.getTime()}`
-    });
-  }
-
-  // Send email
-  const htmlEmailContent = prepare_password_reset_email(User.fromEntity(user), code);
-  await mailer.send_email({ to: user.email, subject: "Reset your password", html: htmlEmailContent });
-
-  AuthEmitter.emit("SEND_RESET_PASSWORD_CODE_SUCCESS", User.fromEntity(user));
-  return User.fromEntity(user);
-};
-
-*/

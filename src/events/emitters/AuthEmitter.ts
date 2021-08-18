@@ -2,10 +2,14 @@ import { EventEmitter } from "events";
 import TypedEmitter from "typed-emitter";
 import { User } from "../../models/User";
 
+export enum CommonAuthEvents {
+  AccountBlocked = "ACCOUNT_BLOCKED",
+  InActiveAccount = "ACCOUNT_INACTIVE"
+}
+
 export enum SigninEvents {
   Success = "USER_SIGNIN_SUCCESS",
-  InvalidPassword = "USER_SIGNIN_FAILURE__INVALID_PASSWORD",
-  UnverifiedEmail = "USER_SIGNIN_FAILURE__UNVERIFIED_EMAIL"
+  InvalidPassword = "USER_SIGNIN_FAILURE__INVALID_PASSWORD"
 }
 
 export enum SignupEvents {
@@ -29,29 +33,9 @@ export enum ResetPasswordEvents {
 
 type IUser = (user: User) => void;
 
-export interface AuthEvents {
-  USER_SIGNIN_SUCCESS: IUser;
-  USER_SIGNIN_FAILURE__INVALID_PASSWORD: IUser;
-  USER_SIGNIN_FAILURE__UNVERIFIED_EMAIL: IUser;
-
-  USER_SIGNUP_SUCCESS: IUser;
-  USER_SIGNUP_FAILURE__DUPLICATE_EMAIL: IUser;
-
-  ACCOUNT_ACTIVATION_SUCCESS: IUser;
-  ACCOUNT_ACTIVATION_FAILURE__TOKEN_EXPIRED: IUser;
-  ACCOUNT_ACTIVATION_FAILURE__TOKEN_NOT_REQUESTED: IUser;
-  ACCOUNT_ACTIVATION_FAILURE__TOKEN_INVALID: IUser;
-
-  RESET_PASSWORD_SUCCESS: IUser;
-  RESET_PASSWORD_FAILURE__TOKEN_EXPIRED: IUser;
-  RESET_PASSWORD_FAILURE__TOKEN_NOT_REQUESTED: IUser;
-  RESET_PASSWORD_FAILURE__TOKEN_INVALID: IUser;
-
-  // SEND_EMAIL_CONFIRMATION_CODE_SUCCESS: IUser;
-  // SEND_EMAIL_CONFIRMATION_CODE_FAILURE__ALREADY_VERIFIED: IUser;
-
-  // SEND_RESET_PASSWORD_CODE_SUCCESS: IUser;
-}
+export type AuthEvents = {
+  [key in CommonAuthEvents | SigninEvents | SignupEvents | AccountActivationEvents | ResetPasswordEvents]: IUser;
+};
 
 class AuthEventsEmitter extends EventEmitter {}
 
