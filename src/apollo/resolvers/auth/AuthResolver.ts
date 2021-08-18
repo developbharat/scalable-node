@@ -11,9 +11,6 @@ import {
   SignupInput
 } from "./auth.inputs";
 
-// TODO: Ability to request to send account activation email.
-// TODO: Ability to request to send password reset email.
-
 @Resolver()
 export class AuthResolver {
   @Query(() => User, { nullable: true })
