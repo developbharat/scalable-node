@@ -1,9 +1,11 @@
 require("reflect-metadata");
 import connectRedis from "connect-redis";
-import express from "express";
+import express, { RequestHandler } from "express";
+import { graphqlHTTP } from "express-graphql";
 import session from "express-session";
 import http from "http";
-import { create_apollo_server } from "./apollo";
+import path from "path";
+import { buildSchema } from "type-graphql";
 import { config } from "./config";
 import { __PROD__ } from "./constants";
 import { RedisDatabase } from "./db/RedisDatabase";
@@ -13,96 +15,111 @@ import { ApiRouter } from "./express";
 import { logger } from "./utils/logger";
 import { EnvironmentValidators } from "./validators/EnvironmentValidators";
 
-const setup_worker = async (): Promise<http.Server> => {
-  // Validate enviroment configuration
-  const isEnvValid = EnvironmentValidators.isEnvConfigValid(config);
-  if (!isEnvValid) {
-    logger.error(EnvironmentValidators.error);
-    process.exit(1);
+export class MainServer {
+  private static _httpServer: http.Server;
+
+  public static async init(): Promise<void> {
+    // Validate enviroment configuration
+    const isEnvValid = EnvironmentValidators.isEnvConfigValid(config);
+    if (!isEnvValid) {
+      logger.error(EnvironmentValidators.error);
+      process.exit(1);
+    }
+
+    // Initialize database
+    await SQLDatabase.init();
+
+    // Initialize all event receivers.
+    // You need to call them atleast once to register for events
+    await init_event_receivers();
+
+    // Express Server
+    await this.create_express_server();
   }
 
-  // Initialize database
-  await SQLDatabase.init();
+  public static start(): void {
+    if (!this._httpServer) throw new Error("MainServer not initialized...");
 
-  await init_event_receivers();
+    this._httpServer.listen(config.root.port, () => {
+      logger.debug(`Server started at http://localhost:${config.root.port}`);
+    });
+  }
 
-  // Initialize express application
-  const app = express();
-  app.use(express.json());
+  public static get server(): http.Server {
+    if (!this._httpServer) throw new Error("MainServer not initialized...");
+    return MainServer._httpServer;
+  }
 
-  const RedisStore = connectRedis(session);
-  app.use(
-    session({
-      name: "qid",
-      store: new RedisStore({ client: RedisDatabase.client }),
-      secret: config.session.secret,
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        httpOnly: __PROD__,
-        secure: __PROD__,
-        signed: true,
-        sameSite: "lax"
+  private static async create_express_server(): Promise<http.Server> {
+    const app = express();
+    app.use(express.json());
+
+    const RedisStore = connectRedis(session);
+    app.use(
+      session({
+        name: "qid",
+        store: new RedisStore({ client: RedisDatabase.client }),
+        secret: config.session.secret,
+        resave: false,
+        saveUninitialized: false,
+        cookie: {
+          httpOnly: __PROD__,
+          secure: __PROD__,
+          signed: true,
+          sameSite: "lax"
+        }
+      })
+    );
+
+    // API Routes
+    app.use("/api", ApiRouter());
+
+    // Grapqhl Routes
+    const apolloMiddleware = await this.create_apollo_middleware();
+    app.use("/graphql", apolloMiddleware);
+
+    // Error handlers.
+    app.use((err: any, _req: any, res: any, next: any) => {
+      if (err) {
+        if (err.status) return res.status(err.status).json({ error: err.message });
+        return res.status(500).json({ error: err.message });
+      } else {
+        return next();
       }
-    })
-  );
+    });
 
-  const apollo = await create_apollo_server();
-  app.use("/graphql", apollo);
-  app.use("/api", ApiRouter());
+    // Configure 404 Routes
+    app.use("*", (_req, res, _next) => {
+      return res.status(404).json({ error: "Requested route not found." });
+    });
 
-  // Configure error handlers.
-  app.use((err: any, _req: any, res: any, next: any) => {
-    if (err) {
-      if (err.status) return res.status(err.status).json({ error: err.message });
-      return res.status(500).json({ error: err.message });
-    } else {
-      return next();
-    }
-  });
+    // Create http server.
+    this._httpServer = http.createServer(app);
+    return this._httpServer;
+  }
 
-  // Configure 404 Routes
-  app.use("*", (_req, res, _next) => {
-    return res.status(404).json({ error: "Requested route not found." });
-  });
+  private static async create_apollo_middleware(): Promise<RequestHandler> {
+    const schema = await buildSchema({
+      resolvers: [path.join(__dirname, "apollo", "resolvers", "**", "*Resolver.*")],
+      validate: false // Don't use class-validator dependency
+    });
 
-  // Create http server.
-  const httpServer = http.createServer(app);
+    const apollo = graphqlHTTP((req, res, _) => ({
+      schema: schema,
+      graphiql: !__PROD__,
+      context: {
+        req,
+        res
+      }
+    }));
 
-  // Start http server
-  httpServer.listen(config.root.port, () => {
-    logger.debug(`Server started at http://localhost:${config.root.port}`);
-  });
+    return apollo;
+  }
+}
 
-  return httpServer;
-};
-
-// const setup_cluster = () => {
-//   if (cluster.isMaster) {
-//     const numCPUs = os.cpus().length;
-
-//     for (let i = 0; i < numCPUs; i++) {
-//       logger.debug(`Forking process number ${i}...`);
-//       cluster.fork();
-//     }
-
-//     cluster.on("exit", (worker) => {
-//       logger.debug(`Worker ${worker.process.pid} died`);
-//       cluster.fork();
-//     });
-//   }
-// };
-
-const main = async (): Promise<void> => {
-  // if (__PROD__) {
-  //   if (cluster.isMaster) {
-  //     setup_cluster();
-  //   } else {
-  //     await setup_worker();
-  //   }
-  // } else {
-  await setup_worker();
-  // }
+export const main = async (): Promise<void> => {
+  await MainServer.init();
+  MainServer.start();
 };
 
 main().catch((err) => {
