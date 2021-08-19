@@ -4,7 +4,7 @@ import { BaseValidator } from "../core/BaseValidator";
 const appConfigSchema = Joi.object({
   root: Joi.object({
     port: Joi.number().positive().integer().label("Application Port: PORT").required(),
-    env: Joi.string().valid("production", "development", "testing").label("NODE_ENV").required()
+    env: Joi.string().valid("production", "development", "test").label("NODE_ENV").required()
   })
     .label("Root Configuration")
     .required(),
