@@ -11,7 +11,7 @@
     "test": "jest --runInBand",
     "prepare": "husky install",
     "release": "standard-version",
-    "typeorm": "ts-node ./node_modules/.bin/typeorm -f ./ormconfig.local.ts",
+    "typeorm": "ts-node ./node_modules/.bin/typeorm -f ./src/db/ormconfig.ts",
     "migration:generate": "yarn run typeorm migration:generate -n",
     "migration:blank": "yarn run typeorm migration:create -n",
     "release:minor": "standard-version --release-as minor",
