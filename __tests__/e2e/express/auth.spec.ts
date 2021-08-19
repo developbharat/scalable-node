@@ -1,39 +1,21 @@
-require("reflect-metadata");
 import supertest from "supertest";
-import express from "express";
-import session from "express-session";
-import { BasicAuthRouter } from "../../../src/express/routes/auth/BasicAuthRouter";
-import { SQLDatabase } from "../../../src/db/SQLDatabase";
+import { MainServer } from "../../../src/MainServer";
 
 describe("Authentication Express Endpoint", () => {
   let app: supertest.SuperTest<supertest.Test>;
 
   beforeAll(async () => {
-    await SQLDatabase.init();
-    const exp = express();
-    exp.use(express.json({}));
-    exp.use(express.json());
-    exp.use(express.urlencoded({ extended: true }));
-    exp.use(
-      session({
-        name: "qid",
-        secret: "test secret",
-        resave: false,
-        saveUninitialized: false
-      })
-    );
-    exp.use("/auth", BasicAuthRouter());
-
-    app = supertest(exp);
+    await MainServer.init();
+    app = supertest(MainServer.expressServer);
   });
 
   afterAll(async () => {
-    await SQLDatabase.close();
+    await MainServer.shutdown();
   });
 
   it("should return user with valid auth credentials", (done) => {
     app
-      .post("/auth/signin")
+      .post("/api/auth/basic/signin")
       .send({
         email: "user1@mail.com",
         password: "Password@123"

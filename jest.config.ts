@@ -5,6 +5,7 @@ const config: Config.InitialOptions = {
   testEnvironment: "node",
   maxWorkers: "50%",
   passWithNoTests: false,
+  forceExit: true,
   modulePathIgnorePatterns: ["dist/", "src"]
 };
 

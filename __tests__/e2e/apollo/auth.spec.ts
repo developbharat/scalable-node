@@ -1,40 +1,16 @@
-require("reflect-metadata");
-import express from "express";
-import session from "express-session";
 import supertest from "supertest";
-import { create_apollo_server } from "../../../src/apollo";
-import { SQLDatabase } from "../../../src/db/SQLDatabase";
-
-// https://stackoverflow.com/questions/49141927/express-body-parser-utf-8-error-in-test
-const iconvLite = require("iconv-lite/lib");
-iconvLite.getCodec("UTF-8");
-
-// curl --request POST   --header 'content-type: application/json'   --url http://localhost:4000/graphql
-// --data '{"query":"mutation SigninMutation{ signin(options: {email: \"test@mail.com\", password: \"password\"}){id, fname, lname, email}}"}'
+import { MainServer } from "../../../src/MainServer";
 
 describe("Authentication Graphql Endpoint", () => {
   let apollo: supertest.SuperTest<supertest.Test>;
 
   beforeAll(async () => {
-    await SQLDatabase.init();
-    const exp = express();
-    exp.use(express.json());
-    exp.use(express.urlencoded({ extended: true }));
-    exp.use(
-      session({
-        name: "qid",
-        secret: "test secret",
-        resave: false,
-        saveUninitialized: false
-      })
-    );
-
-    exp.use("/graphql", await create_apollo_server());
-    apollo = supertest(exp);
+    await MainServer.init();
+    apollo = supertest(MainServer.expressServer);
   });
 
-  afterAll(() => {
-    SQLDatabase.close();
+  afterAll(async () => {
+    await MainServer.shutdown();
   });
 
   it("should return user with valid auth credentials", (done) => {
@@ -52,7 +28,7 @@ describe("Authentication Graphql Endpoint", () => {
         expect(res.body.data.signin).toMatchObject({
           email: "user1@mail.com"
         });
-        done();
+        return done();
       });
   });
 });
