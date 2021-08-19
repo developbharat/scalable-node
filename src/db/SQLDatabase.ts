@@ -10,7 +10,7 @@ export class SQLDatabase {
   }
 
   public static async close(): Promise<void> {
-    await this._conn.close();
+    if (this._conn?.isConnected) await this._conn.close();
   }
 
   public static get conn(): Connection {
