@@ -112,7 +112,7 @@ export const activate_user_account = async (options: ActivateAccountOptions): Pr
   }
 
   // Activate account and delete token
-  await SQLDatabase.conn.getRepository(UserEntity).update({ id: user.id }, { isEmailVerified: true });
+  await SQLDatabase.conn.getRepository(UserEntity).update({ id: user.id }, { accountStatus: AccountStatus.active });
   await SQLDatabase.conn.getRepository(AuthTokenEntity).delete({ id: token.id });
 
   AuthEmitter.emit(AccountActivationEvents.Success, User.fromEntity(user));
