@@ -3,6 +3,7 @@ import * as mailerService from "../../services/emails/auth.emails.service";
 import {
   AccountActivationEvents,
   AuthEmitter,
+  CommonAuthEvents,
   ResetPasswordEvents,
   SigninEvents,
   SignupEvents
@@ -17,7 +18,7 @@ AuthEmitter.on(SigninEvents.Success, (user) => {
   logger.info("User just logged in: ", user);
 });
 
-AuthEmitter.on(SigninEvents.UnverifiedEmail, async (user) => {
+AuthEmitter.on(CommonAuthEvents.InActiveAccount, async (user) => {
   // User tried to login with unverified email
   // Send him a email with account verification instructions
   // or something similar to support him.

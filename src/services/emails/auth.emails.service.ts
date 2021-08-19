@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { CustomError, GeneralStatusCodes } from "../../core/errors/CustomError";
 import { SQLDatabase } from "../../db/SQLDatabase";
+import { AccountStatus } from "../../entities/auth/AccountStatus";
 import { AuthTokenEntity } from "../../entities/auth/AuthTokenEntity";
 import { TokenPurpose } from "../../entities/auth/TokenPurpose";
 import { UserEntity } from "../../entities/auth/UserEntity";
@@ -70,7 +71,8 @@ export const send_account_activation_email = async (email: string): Promise<void
   const user = await check_valid_user_by_email(email);
 
   // Check if account is already verified.
-  if (user.isEmailVerified) throw new CustomError(GeneralStatusCodes.BadRequest, "Account already activated.");
+  if (user.accountStatus === AccountStatus.active)
+    throw new CustomError(GeneralStatusCodes.BadRequest, "Account already activated.");
 
   // Check if account activation code is already requested.
   const existingToken = await SQLDatabase.conn
